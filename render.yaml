@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: aerobreeze-shop   # 👈 ဒီနေရာလေးကို aerobreeze လို့ ပြောင်းပေးပါဗျာ
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app

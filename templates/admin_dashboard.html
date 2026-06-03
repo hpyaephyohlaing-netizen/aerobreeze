@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AeroBreeze - Admin Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { 
+            --bg-color: #0b0f19; 
+            --panel-bg: #151c2c; 
+            --primary-gold: #ffcc00; 
+            --input-bg: #1f293d; 
+            --border-color: #24344d;
+            --success-color: #2ec4b6; 
+            --warning-color: #e67e22; 
+            --danger-color: #e74c3c;
+        }
+        body { background-color: var(--bg-color); color: #ffffff; font-family: sans-serif; padding: 30px; margin: 0; }
+        .container { max-width: 1300px; margin: 0 auto; }
+        .dashboard-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 30px; margin-bottom: 40px; }
+        .panel { background-color: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin-bottom: 30px; }
+        .panel-history-log { border: 1px solid rgba(255, 204, 0, 0.3); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 6px; color: #cdcdcd; font-size: 0.9rem; }
+        input[type="text"], input[type="number"], input[type="file"] { width: 100%; padding: 11px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: white; box-sizing: border-box; }
+        button.btn-submit { width: 100%; background-color: var(--primary-gold); color: #000; border: none; padding: 14px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 0.95rem; }
+        th { color: var(--primary-gold); background-color: rgba(255, 204, 0, 0.02); }
+        
+        /* အော်ဒါအခြေအနေ Badge များ */
+        .badge { padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; display: inline-block; }
+        .badge-pending { background-color: rgba(230, 126, 34, 0.15); color: var(--warning-color); border: 1px solid var(--warning-color); }
+        .badge-confirmed { background-color: rgba(46, 196, 182, 0.15); color: var(--success-color); border: 1px solid var(--success-color); }
+        .badge-cancelled { background-color: rgba(231, 76, 60, 0.15); color: var(--danger-color); border: 1px solid var(--danger-color); }
+        
+        /* 🌟 VS Code Error များကို ရှင်းထုတ်ထားသော သမိုင်းမှတ်တမ်းအတွက် Table Row Background CSS */
+        .row-confirm { background-color: rgba(46, 196, 182, 0.04) !important; }
+        .row-cancel { background-color: rgba(231, 76, 60, 0.04) !important; }
+        
+        .btn-action { padding: 6px 12px; border-radius: 6px; border: none; font-size: 0.85rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; font-weight: bold; }
+        .btn-confirm { background-color: var(--success-color); color: #000; }
+        .btn-cancel { background-color: var(--warning-color); color: #000; }
+        .btn-delete { background-color: var(--danger-color); color: #fff; }
+        .btn-delete-small { background-color: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 0.8rem; }
+        
+        .txt-mute { color: #aaa; font-size: 0.85rem; }
+        .txt-gold { color: var(--primary-gold); font-weight: bold; }
+        .txt-orange { color: #ff9f43; font-style: italic; }
+        .center-text { text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="panel" style="background: linear-gradient(135deg, #1f293d 0%, #151c2c 100%); border-color: var(--primary-gold); display: flex; align-items: center; justify-content: space-between; padding: 20px 30px; margin-bottom: 25px;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="background: rgba(255, 204, 0, 0.1); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary-gold); font-size: 1.5rem;">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0; color: #fff; font-size: 1.1rem;">စုစုပေါင်း ဝဘ်ဆိုက်ဝင်ရောက်ကြည့်ရှုသူ</h3>
+                    <p style="margin: 5px 0 0 0; color: #aaa; font-size: 0.85rem;">Customer များ စတိုးဆိုင်စာမျက်နှာသို့ ဝင်ရောက်မှု အကြိမ်ရေ</p>
+                </div>
+            </div>
+            <div style="font-size: 2.2rem; font-weight: bold; color: var(--primary-gold);">
+                {{ visitors if visitors else 0 }} <span style="font-size: 1rem; color: #fff; font-weight: normal;">ကြိမ်</span>
+            </div>
+        </div>
+
+        <h1 style="color:var(--primary-gold); margin-bottom: 30px;"><i class="fa-solid fa-user-shield"></i> AeroBreeze Admin Dashboard</h1>
+        <div style="text-align: right; margin-bottom: 20px;">
+    <a href="{{ url_for('admin_logout') }}" style="background-color: #e74c3c; color: white; text-decoration: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 0.9rem;"><i class="fa-solid fa-right-from-bracket"></i> Logout အကောင့်မှထွက်မည်</a>
+</div>
+        
+        <div class="dashboard-grid">
+            <div class="panel">
+                <h2 style="color:var(--primary-gold); margin-top:0;"><i class="fa-solid fa-plus"></i> ဒီဇိုင်းအသစ်တင်ရန်</h2>
+                <form action="{{ url_for('add_design') }}" method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label>ဒီဇိုင်းအမည်</label>
+                        <input type="text" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>စျေးနှုန်း (ကျပ်)</label>
+                        <input type="number" name="price" required>
+                    </div>
+                    <div class="form-group">
+                        <label>အနည်းဆုံးမှာယူရန်အရေအတွက်</label>
+                        <input type="number" name="min_order_qty" required>
+                    </div>
+                    <div class="form-group">
+                        <label>ပင်မပုံရိပ် (၁ ပုံ)</label>
+                        <input type="file" name="image_file" accept="image/*">
+                    </div>
+                    <div class="form-group">
+                        <label>တခြားအရောင်ပုံများ</label>
+                        <input type="file" name="color_files[]" accept="image/*" multiple>
+                    </div>
+                    <div class="form-group">
+                        <label>3D Model ဖိုင် (.glb)</label>
+                        <input type="file" name="model_file" accept=".glb">
+                    </div>
+                    <button type="submit" class="btn-submit">သိမ်းဆည်းမည်</button>
+                </form>
+            </div>
+
+            <div class="panel">
+                <h2 style="color:var(--primary-gold); margin-top:0;"><i class="fa-solid fa-layer-group"></i> လက်ရှိတင်ထားသောဒီဇိုင်းများ</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>အမည်</th>
+                            <th>စျေးနှုန်း</th>
+                            <th>အနည်းဆုံးမှာယူမှု</th>
+                            <th>လုပ်ဆောင်ချက်</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for design in designs %}
+                        <tr>
+                            <td><b>{{ design.name }}</b></td>
+                            <td class="txt-gold">{{ "{:,}".format(design.price) }} ကျပ်</td>
+                            <td>{{ design.min_order_qty }} ထည်</td>
+                            <td>
+                                <a href="{{ url_for('delete_design', design_id=design.id) }}" class="btn-delete-small" onclick="return confirm('ဤဒီဇိုင်းကို ဖျက်ပစ်ရန် သေချာပါသလား?');">
+                                    <i class="fa-solid fa-trash"></i> ဖျက်မည်
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2 style="color:var(--primary-gold); margin-top:0;"><i class="fa-solid fa-cart-shopping"></i> လက်ရှိရောက်ရှိနေသော အော်ဒါစာရင်း</h2>
+            {% if orders %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>မှာယူသည့်ပစ္စည်း</th>
+                        <th>ဝယ်သူ / ဖုန်း</th>
+                        <th>အရေအတွက်</th>
+                        <th>လိပ်စာနှင့်မှတ်ချက်</th>
+                        <th>အခြေအနေ</th>
+                        <th style="text-align: center; width: 280px;">ထိန်းချုပ်ရန်</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>#{{ order.order_id }}</td>
+                        <td class="txt-gold"><b>{{ order.design_name }}</b></td>
+                        <td>{{ order.customer_name }}<br><small style="color:#aaa;">📞 {{ order.phone }}</small></td>
+                        <td>{{ order.quantity }} ထည်</td>
+                        <td><span>📍 {{ order.address }}</span><br><small style="color: #bbb;">📝 {{ order.note }}</small></td>
+                        <td>
+                            <span class="badge {% if order.status == 'Confirmed' %}badge-confirmed{% elif order.status == 'Cancelled' %}badge-cancelled{% else %}badge-pending{% endif %}">{{ order.status }}</span>
+                        </td>
+                        <td class="center-text">
+                            <a href="{{ url_for('confirm_order', order_id=order.order_id) }}" class="btn-action btn-confirm"><i class="fa-solid fa-check"></i> Confirm</a>
+                            <a href="javascript:void(0);" onclick="handleCancel('{{ order.order_id }}')" class="btn-action btn-cancel"><i class="fa-solid fa-xmark"></i> Cancel</a>
+                            <a href="{{ url_for('delete_order', order_id=order.order_id) }}" class="btn-action btn-delete" onclick="return confirm('ဖျက်ရန် သေချာပါသလား?');"><i class="fa-solid fa-trash-can"></i> Delete</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p style="text-align: center; color: #777; padding: 10px;">လတ်တလောတွင် အော်ဒါမရှိသေးပါခင်ဗျာ။</p>
+            {% endif %}
+        </div>
+
+        <div class="panel panel-history-log">
+            <h2 style="color:var(--primary-gold); margin-top:0;"><i class="fa-solid fa-clock-history"></i> အော်ဒါ သမိုင်းမှတ်တမ်း (Order History Log)</h2>
+            {% if history %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>ရက်စွဲအချိန်</th>
+                        <th>အမျိုးအစား</th>
+                        <th>အော်ဒါ ID</th>
+                        <th>ဒီဇိုင်းအမည်</th>
+                        <th>ဝယ်သူအမည်</th>
+                        <th>အရေအတွက်</th>
+                        <th>စုစုပေါင်းငွေ</th>
+                        <th>Cancel မှတ်ချက်</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in history %}
+                    <tr class="{% if item.type == 'Confirm' %}row-confirm{% else %}row-cancel{% endif %}">
+                        <td class="txt-mute">{{ item.date }}</td>
+                        <td>
+                            <span class="badge {% if item.type == 'Confirm' %}badge-confirmed{% else %}badge-cancelled{% endif %}">{{ item.type }}</span>
+                        </td>
+                        <td>#{{ item.order_id }}</td>
+                        <td><b>{{ item.design_name }}</b></td>
+                        <td>{{ item.customer_name }}</td>
+                        <td>{{ item.quantity }} ထည်</td>
+                        <td class="txt-gold">{{ "{:,}".format(item.total_amount) }} ကျပ်</td>
+                        <td class="txt-orange">{{ item.reason }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="center-text" style="color: #666; padding: 20px;">သမိုင်းမှတ်တမ်း မရှိသေးပါဗျာ။</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function handleCancel(orderId) {
+            var reason = prompt("Cancel လုပ်ရသည့် အကြောင်းအရင်း -");
+            if (reason === null) return;
+            if (reason.trim() === "") reason = "အကြောင်းပြချက် မဖော်ပြထားပါ";
+            window.location.href = "/cancel_order/" + orderId + "?reason=" + encodeURIComponent(reason);
+        }
+    </script>
+</body>
+</html>

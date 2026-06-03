@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AeroBreeze - Admin Login</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --bg-color: #0b0f19; --panel-bg: #151c2c; --primary-gold: #ffcc00; --input-bg: #1f293d; --border-color: #24344d; }
+        body { background-color: var(--bg-color); color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-box { background-color: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 40px; width: 360px; box-shadow: 0 4px 25px rgba(0,0,0,0.5); text-align: center; border-color: rgba(255,204,0,0.2); }
+        h2 { color: var(--primary-gold); margin-bottom: 30px; font-size: 1.6rem; }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        label { display: block; margin-bottom: 8px; color: #ccc; font-size: 0.9rem; }
+        input[type="text"], input[type="password"] { width: 100%; padding: 12px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: white; box-sizing: border-box; font-size: 1rem; }
+        input:focus { border-color: var(--primary-gold); outline: none; }
+        .btn-login { width: 100%; background-color: var(--primary-gold); color: black; border: none; padding: 12px; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; margin-top: 10px; }
+        .error-msg { background-color: rgba(231, 76, 60, 0.15); color: #e74c3c; border: 1px solid #e74c3c; padding: 10px; border-radius: 6px; margin-bottom: 20px; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+    <div class="login-box">
+        <h2><i class="fa-solid fa-lock"></i> Admin Login Only</h2>
+        
+        {% if error %}
+        <div class="error-msg"><i class="fa-solid fa-triangle-exclamation"></i> {{ error }}</div>
+        {% endif %}
+        
+        <form action="{{ url_for('admin_login') }}" method="POST">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" name="username" placeholder="အိုင်ဒီရိုက်ထည့်ပါ" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" placeholder="ပါစဝတ်ရိုက်ထည့်ပါ" required>
+            </div>
+            <button type="submit" class="btn-login">လော့ဂ်အင်ဝင်မည်</button>
+        </form>
+    </div>
+
+</body>
+</html>

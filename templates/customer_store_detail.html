@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ design.name }} - AeroBreeze</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.1.1/model-viewer.min.js"></script>
+    <style>
+        :root { --bg-color: #0b0f19; --panel-bg: #151c2c; --primary-gold: #ffcc00; --border-color: #24344d; }
+        body { background-color: var(--bg-color); color: #ffffff; font-family: sans-serif; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .back-btn { color: var(--primary-gold); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 20px; font-weight: bold; }
+        .detail-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; background-color: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 30px; }
+        .visual-section { display: flex; flex-direction: column; gap: 20px; }
+        model-viewer, .main-img { width: 100%; height: 450px; background-color: #1f293d; border-radius: 12px; border: 1px solid var(--border-color); object-fit: contain; }
+        .color-gallery { display: flex; gap: 10px; flex-wrap: wrap; }
+        .color-thumb { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid var(--border-color); cursor: pointer; background-color: #0b0f19; }
+        .color-thumb:hover, .color-thumb.active { border-color: var(--primary-gold); }
+        .info-section { display: flex; flex-direction: column; justify-content: space-between; }
+        .price-tag { font-size: 2rem; color: var(--primary-gold); font-weight: bold; margin: 20px 0; }
+        .btn-order { background-color: var(--primary-gold); color: #000; text-decoration: none; padding: 16px; text-align: center; border-radius: 8px; font-weight: bold; font-size: 1.2rem; display: block; margin-top: 30px; box-shadow: 0 4px 15px rgba(255,204,0,0.3); }
+        .toggle-view { display: flex; gap: 10px; margin-bottom: 10px; }
+        .view-btn { background: #1f293d; border: 1px solid var(--border-color); color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+        .view-btn.active { background: var(--primary-gold); color: black; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <a href="/" class="back-btn"><i class="fa-solid fa-arrow-left"></i> စတိုးဆိုင်သို့ ပြန်သွားရန်</a>
+        
+        <div class="detail-grid">
+            <div class="visual-section">
+                <div class="toggle-view">
+                    <button class="view-btn active" id="btn-3d" onclick="switchView('3d')"><i class="fa-solid fa-cube"></i> 3D View</button>
+                    <button class="view-btn" id="btn-img" onclick="switchView('img')"><i class="fa-solid fa-image"></i> ဓာတ်ပုံဖြင့်ကြည့်ရန်</button>
+                </div>
+
+                {% if design.model_3d_url %}
+                <model-viewer id="viewer-3d" src="{{ design.model_3d_url }}" camera-controls auto-rotate alternative-poster="{{ design.image_url }}"></model-viewer>
+                {% else %}
+                <div id="viewer-3d" style="height:450px; background:#1f293d; display:flex; align-items:center; justify-content:center; border-radius:12px; border:1px solid var(--border-color);">
+                    <p style="color:#aaa;"><i class="fa-solid fa-box-open"></i> ယခုဒီဇိုင်းအတွက် 3D Model မရှိသေးပါ</p>
+                </div>
+                {% endif %}
+
+                <img id="main-image" class="main-img" src="{{ design.image_url }}" alt="{{ design.name }}" style="display: none;">
+
+                <div>
+                    <p style="margin-top:0; color:#aaa;">အရောင်ကွဲများ စစ်ဆေးရန် -</p>
+                    <div class="color-gallery">
+                        <img class="color-thumb active" src="{{ design.image_url }}" onclick="changeImage('{{ design.image_url }}', this)">
+                        {% for color_img in design.color_images %}
+                        <img class="color-thumb" src="{{ color_img }}" onclick="changeImage('{{ color_img }}', this)">
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-section">
+                <div>
+                    <h1 style="margin-top: 0; color: white;">{{ design.name }}</h1>
+                    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">
+                    <p style="color: #ccc; line-height: 1.6;">AeroBreeze Premium Quality Custom Made အဝတ်အထည်ဖြစ်ပါသည်။ ခန္ဓာကိုယ်နှင့် အံကိုက်ဖြစ်စေပြီး သက်သောင့်သက်သာရှိသော အထည်သားကို အသုံးပြုထားပါသည်။</p>
+                    <div class="price-tag">{{ "{:,}".format(design.price) }} ကျပ်</div>
+                    <p style="color: #aaa;"><i class="fa-solid fa-box"></i> အနည်းဆုံးမှာယူရမည့် အရေအတွက် - <b>{{ design.min_order_qty }} ထည်</b></p>
+                </div>
+
+                <a href="{{ url_for('place_order', design_name=design.name) }}" class="btn-order">
+                    <i class="fa-solid fa-cart-plus"></i> ယခုဒီဇိုင်းအား မှာယူမည်
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchView(view) {
+            var v3d = document.getElementById('viewer-3d');
+            var img = document.getElementById('main-image');
+            var btn3d = document.getElementById('btn-3d');
+            var btnImg = document.getElementById('btn-img');
+
+            if (view === '3d') {
+                if(v3d) v3d.style.display = 'block';
+                img.style.display = 'none';
+                btn3d.classList.add('active');
+                btnImg.classList.remove('active');
+            } else {
+                if(v3d) v3d.style.display = 'none';
+                img.style.display = 'block';
+                btn3d.classList.remove('active');
+                btnImg.classList.add('active');
+            }
+        }
+
+        function changeImage(src, element) {
+            switchView('img');
+            document.getElementById('main-image').src = src;
+            var thumbs = document.getElementsByClassName('color-thumb');
+            for (var i = 0; i < thumbs.length; i++) {
+                thumbs[i].classList.remove('active');
+            }
+            element.classList.add('active');
+        }
+    </script>
+</body>
+</html>
