@@ -1,0 +1,219 @@
+import os
+from datetime import datetime
+from flask import Flask, render_template, request, redirect, url_for, session, abort
+from werkzeug.utils import secure_filename
+
+app = Flask(__name__) # တစ်ကြိမ်ပဲရေးပါ
+# 🌟 Secret Key နှင့် Admin အကောင့် သတ်မှတ်ချက်များ
+app.secret_key = 'aerobreeze_secret_key_123'
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD = "password123"
+
+# Upload Folder သတ်မှတ်ခြင်း အပိုင်း
+UPLOAD_FOLDER = os.path.join('static', 'uploads')
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'glb'}
+
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+# ----------------------------------------------------
+# 🌟 အောက်ကလိုင်းတွေကတော့ သင့်ဖိုင်ထဲက "# နမူနာ ဒီဇိုင်း Data" နဲ့ "designs_db = [" အတိုင်း အောက်မှာ ဒီအတိုင်း ဆက်ရှိနေရပါမယ်...
+# နမူနာ ဒီဇိုင်း Data
+designs_db = [
+    {
+        "id": "1",
+        "name": "Premium Shirt",
+        "price": 5000,
+        "min_order_qty": 30,
+        "image_url": "/static/uploads/shirt.png",
+        "color_images": [],
+        "model_3d_url": ""
+    }
+]
+
+orders_db = []
+history_db = []
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# ==========================================
+# CUSTOMER STORE ROUTES
+# ==========================================
+
+# (က) စတိုးဆိုင် ပင်မစာမျက်နှာ
+@app.route('/')
+def customer_store():
+    return render_template('customer_store.html', designs=designs_db)
+
+# (ခ) အသေးစိတ်ပြသခန်း (3D နှင့် အရောင်စုံကြည့်ရန်)
+@app.route('/design/<design_id>')
+def design_detail(design_id):
+    selected_design = next((d for d in designs_db if d['id'] == design_id), None)
+    if not selected_design:
+        return "ဒီဇိုင်း ရှာမတွေ့ပါ", 404
+    return render_template('customer_store_detail.html', design=selected_design)
+
+# (ဂ) အော်ဒါမှာယူသည့် ဖောင်စာမျက်နှာ
+# # (ဂ) အော်ဒါမှာယူသည့် မောင်စာမျက်နှာ
+@app.route('/place_order/<design_name>', methods=['GET', 'POST'])
+def place_order(design_name):
+    selected_design = next((d for d in designs_db if d['name'] == design_name), None)
+    if not selected_design:
+        selected_design = {"name": design_name, "price": 0, "min_order_qty": 30}
+
+    if request.method == 'POST':
+        customer_name = request.form.get('customer_name')
+        phone = request.form.get('phone')
+        quantity = int(request.form.get('quantity', 30))
+        size = request.form.get('size', 'L')  # 🌟 ဖောင်မှပေးပို့သော အထည်ဆိုဒ်ကို ဖမ်းယူခြင်း
+        address = request.form.get('address')
+        note = request.form.get('note')
+        
+        new_order = {
+            "order_id": len(orders_db) + 1,
+            "design_name": design_name,
+            "customer_name": customer_name,
+            "phone": phone,
+            "quantity": quantity,
+            "size": size,  # 🌟 အော်ဒါ Data ထဲသို့ ဆိုဒ်ထည့်သွင်းခြင်း
+            "address": address,
+            "note": note,
+            "status": "Pending"
+        }
+        orders_db.append(new_order)
+        from flask import flash
+        flash("အော်ဒါမှာယူမှု အောင်မြင်ပါသည်။ ရုံးဘက်မှ ၂၄ နာရီအတွင်း ပြန်လည်ဆက်သွယ်ပါမည်။")
+        return redirect(url_for('customer_store'))
+
+    return render_template('place_order.html', design=selected_design)
+# ==========================================
+# 🌟 (၁) Admin Login စာမျက်နှာနှင့် စစ်ဆေးသည့်စနစ်
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    error = None
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+            session['logged_in'] = True  # Login အောင်မြင်ကြောင်း မှတ်သားခြင်း
+            return redirect(url_for('admin_dashboard'))
+        else:
+            error = "Username သို့မဟုတ် Password မှားယွင်းနေပါသည်။"
+            
+    return render_template('admin_login.html', error=error)
+
+# 🌟 (၂) Admin အကောင့်မှ ပြန်ထွက်သည့် (Logout) စနစ်
+@app.route('/admin/logout')
+def admin_logout():
+    session.pop('logged_in', None)
+    return redirect(url_for('admin_login'))
+
+@app.route('/admin')
+def admin_dashboard():
+    if not session.get('logged_in'):
+        return redirect(url_for('admin_login'))
+    return render_template('admin_dashboard.html', designs=designs_db, orders=orders_db, history=history_db)
+
+@app.route('/add_design', methods=['POST'])
+def add_design():
+    name = request.form.get('name')
+    price = int(request.form.get('price', 0))
+    qty = int(request.form.get('min_order_qty', 0))
+    
+    image_url = "/static/uploads/shirt.png"
+    color_images_list = []
+    model_3d_url = ""
+
+    if 'image_file' in request.files:
+        file = request.files['image_file']
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            image_url = f"/static/uploads/{filename}"
+
+    if 'color_files[]' in request.files:
+        files = request.files.getlist('color_files[]')
+        for file in files:
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                color_images_list.append(f"/static/uploads/{filename}")
+
+    if 'model_file' in request.files:
+        file = request.files['model_file']
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            model_3d_url = f"/static/uploads/{filename}"
+
+    new_design = {
+        "id": str(len(designs_db) + 1),
+        "name": name,
+        "price": price,
+        "min_order_qty": qty,
+        "image_url": image_url,
+        "color_images": color_images_list,
+        "model_3d_url": model_3d_url
+    }
+    designs_db.append(new_design)
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/delete_design/<design_id>')
+def delete_design(design_id):
+    global designs_db
+    designs_db = [d for d in designs_db if d['id'] != design_id]
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/confirm_order/<int:order_id>')
+def confirm_order(order_id):
+    order = next((o for o in orders_db if o['order_id'] == order_id), None)
+    if order:
+        order['status'] = 'Confirmed'
+        design = next((d for d in designs_db if d['name'] == order['design_name']), None)
+        unit_price = design['price'] if design else 0
+        total_amount = unit_price * order['quantity']
+        
+        history_item = {
+            "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "type": "Confirm",
+            "order_id": order['order_id'],
+            "design_name": order['design_name'],
+            "customer_name": order['customer_name'],
+            "quantity": order['quantity'],
+            "total_amount": total_amount,
+            "reason": ""
+        }
+        history_db.append(history_item)
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/cancel_order/<int:order_id>')
+def cancel_order(order_id):
+    order = next((o for o in orders_db if o['order_id'] == order_id), None)
+    reason = request.args.get('reason', 'အကြောင်းပြချက်မရှိပါ')
+    if order:
+        order['status'] = 'Cancelled'
+        history_item = {
+            "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "type": "Cancel",
+            "order_id": order['order_id'],
+            "design_name": order['design_name'],
+            "customer_name": order['customer_name'],
+            "quantity": order['quantity'],
+            "total_amount": 0,
+            "reason": reason
+        }
+        history_db.append(history_item)
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/delete_order/<int:order_id>')
+def delete_order(order_id):
+    global orders_db
+    orders_db = [o for o in orders_db if o['order_id'] != order_id]
+    return redirect(url_for('admin_dashboard'))
+
+
+if __name__ == '__main__':
+    app.run()
